@@ -115,31 +115,31 @@ class Main(QMainWindow, Ui_Generator):
             msg.setStandardButtons(QMessageBox.Ok)
             retval = msg.exec_()
         else:
-            #try:
-            parser = TradeParser(path_realization=realization, path_stock=stock, sales_report=report)
-            percent = 0
-            self.progressBar.setFormat('Идет выполнение программы, ждите')
-            for i in range(100):
-                percent += 1
-                self.progressBar.setValue(percent)
-            parser.write_to_excel()
-            self.progressBar.setValue(0)
-            self.progressBar.setFormat('Индикатор выполнения программы')
-            success = QMessageBox()
-            success.setIcon(QMessageBox.Information)
-            success.setInformativeText("Загрузка прошла успешно!")
-            success.setWindowTitle("Успех")
-            success.setStandardButtons(QMessageBox.Ok)
-            retval = success.exec_()
-            '''except Exception as e:
-            self.progressBar.setValue(0)
-            self.progressBar.setFormat('Индикатор выполнения программы')
-            errmsg = QMessageBox()
-            errmsg.setIcon(QMessageBox.Warning)
-            errmsg.setInformativeText(str(e))
-            errmsg.setWindowTitle("Ошибка")
-            errmsg.setStandardButtons(QMessageBox.Ok)
-            retval = errmsg.exec_()'''
+            try:
+                parser = TradeParser(path_realization=realization, path_stock=stock, sales_report=report)
+                percent = 0
+                self.progressBar.setFormat('Идет выполнение программы, ждите')
+                for i in range(100):
+                    percent += 1
+                    self.progressBar.setValue(percent)
+                parser.write_to_excel()
+                self.progressBar.setValue(0)
+                self.progressBar.setFormat('Индикатор выполнения программы')
+                success = QMessageBox()
+                success.setIcon(QMessageBox.Information)
+                success.setInformativeText("Загрузка прошла успешно!")
+                success.setWindowTitle("Успех")
+                success.setStandardButtons(QMessageBox.Ok)
+                retval = success.exec_()
+            except Exception as e:
+                self.progressBar.setValue(0)
+                self.progressBar.setFormat('Индикатор выполнения программы')
+                errmsg = QMessageBox()
+                errmsg.setIcon(QMessageBox.Warning)
+                errmsg.setInformativeText(str(e))
+                errmsg.setWindowTitle("Ошибка")
+                errmsg.setStandardButtons(QMessageBox.Ok)
+                retval = errmsg.exec_()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
