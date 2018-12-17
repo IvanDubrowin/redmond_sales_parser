@@ -2,7 +2,6 @@ import pandas as pd
 import re
 from datetime import datetime
 from numpy import mean, nan
-from openpyxl import load_workbook
 
 
 class TradeParser:
