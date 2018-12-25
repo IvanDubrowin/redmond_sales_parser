@@ -1,8 +1,7 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
-from core.tradeparser import TradeParser
-from core.shopnameparser import get_shop
+from core.tradeparser import TradeParser, get_shop
 import sys
 
 class Ui_Generator(object):
