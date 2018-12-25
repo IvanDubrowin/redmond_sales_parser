@@ -112,7 +112,7 @@ class Main(QMainWindow, Ui_Generator):
                         percent += 1
                         self.progressBar.setValue(percent)
                     choices = get_shop(report)
-                    self.choice_shop.addItems(list(choices))
+                    self.choice_shop.addItems(choices)
                     self.choice_shop.setEnabled(True)
                     self.progressBar.setValue(0)
                     self.progressBar.setFormat('Индикатор выполнения программы')
