@@ -102,7 +102,7 @@ class TradeParser:
 
         count_matches_keys = len(found_keys)
 
-        if len(not_found_keys) > 0:
+        if not_found_keys:
             not_found_keys = list(found_keys.symmetric_difference(not_found_keys))
             not_found_keys = '\n'.join(not_found_keys)
             report_info = f'Найдено {count_matches_keys} товаров из {count_data_dict_keys}, не найдено: {not_found_keys} \nНеобходимо исправить данные!'
