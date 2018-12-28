@@ -1,9 +1,9 @@
 import pandas as pd
-from numpy import mean, nan
 import re
+from numpy import mean, nan
 from datetime import datetime
 from string import punctuation
-from openpyxl import load_workbook
+from fuzzywuzzy import fuzz
 
 
 class TradeParser:
@@ -44,66 +44,32 @@ class TradeParser:
         return data_rl
 
     def parse_sales_report(self):
-        get_product_code = r'(R[A-ZА-Я]{1,4}[- ]{1}[А-ЯA-Z0-9/-]{1,8})\w+|(MSC[- ]{1}[А-ЯA-Z0-9/-]{1,8})\w+'
         data_dict = self.parse_stock_and_realization()
         count_data_dict_keys = len(data_dict)
         not_found_keys = set()
         found_keys = set()
         append_col = pd.DataFrame({'Кол-во': [nan], 'Тек. Остаток': [nan], 'Сумма': [nan]})
 
-        eng = ["a", "b", "c", "e", "k", "m", "n", "h", "o", "p", "t", "u", "y", "A", "B", "E", "K", "M", "O", "P", "C", "T", "H", "Y"]
-        rus = ["а", "в", "с", "е", "к", "м", "н", "н", "о", "р", "т", "и", "у", "А", "В", "Е", "К", "М", "О", "Р", "С", "Т", "Н", "У"]
-        stripped_chars = list(punctuation)
-        tables = [' ', '']
-        stripped_chars.extend(tables)
-
         sales_report = pd.read_excel(self.sales_report, sheet_name='Портянка').filter(items=['Адрес т.т. ', 'Название SKU'])
         sales_report = sales_report[sales_report['Адрес т.т. '].str.contains(self.shop, regex=False)]
-        sales_report = sales_report.join(append_col)
-        sales_report = sales_report.fillna(0)
+        sales_report.join(append_col)
 
-        for key in data_dict.keys():
-            try:
-                product_code = re.search(get_product_code, key).group()
-            except AttributeError:
-                product_code = key.split(' ')[-1]
+        sales_report_keys_and_code = self.search_code(sales_report['Название SKU'].items())
+        data_dict_keys_and_code = self.search_code(data_dict.keys())
 
-            product_code.upper()
-            product_code = list(product_code)
-
-            for char in product_code:
-                if char in rus:
-                    rus_ind = rus.index(char)
-                    ind = product_code.index(char)
-                    product_code[ind] = eng[rus_ind]
-                if char in stripped_chars:
-                    product_code.remove(char)
-
-            product_code = ''.join(product_code)
-
-            for item in sales_report['Название SKU'].items():
-                list_item = list(item[1].upper())
-                for char in list_item:
-                    if char in rus:
-                        rus_ind = rus.index(char)
-                        ind = list_item.index(char)
-                        list_item[ind] = eng[rus_ind]
-                    if char in stripped_chars:
-                        list_item.remove(char)
-                stripped_item = ''.join(list_item)
-
-                if product_code in stripped_item:
-                    sales_report.at[item[0], 'Кол-во'] = int(data_dict[key].get('Кол-во', 0))
-                    sales_report.at[item[0], 'Тек. Остаток'] = int(data_dict[key].get('Тек. Остаток', 0))
-                    sales_report.at[item[0], 'Сумма'] =  int(data_dict[key].get('Сумма', 0))
-                    found_keys.add(key)
-                else:
-                    not_found_keys.add(key)
+        for key in data_dict_keys_and_code:
+            match = [item for item in sales_report_keys_and_code if fuzz.ratio(key[1], item[1]) == 100]
+            if match:
+                sales_report.at[match[0][0][0], 'Кол-во'] = str(data_dict[key[0]].get('Кол-во', ''))
+                sales_report.at[match[0][0][0], 'Тек. Остаток'] = str(data_dict[key[0]].get('Тек. Остаток', ''))
+                sales_report.at[match[0][0][0], 'Сумма'] =  str(data_dict[key[0]].get('Сумма', ''))
+                found_keys.add(key[0])
+            else:
+                not_found_keys.add(key[0])
 
         count_matches_keys = len(found_keys)
 
         if not_found_keys:
-            not_found_keys = list(found_keys.symmetric_difference(not_found_keys))
             not_found_keys = '\n'.join(not_found_keys)
             report_info = f'Найдено {count_matches_keys} товаров из {count_data_dict_keys}, не найдено: {not_found_keys} \nНеобходимо исправить данные!'
         else:
@@ -118,6 +84,41 @@ class TradeParser:
         writer.save()
         writer.close()
         return sales[1]
+
+    @staticmethod
+    def search_code(product_keys):
+        search_keys = []
+        get_product_code = r'(R[A-ZА-Я]{1,4}[- ]{1}[А-ЯA-Z0-9/-]{1,8})\w+|(MSC[- ]{1}[А-ЯA-Z0-9/-]{1,8})\w+'
+        stripped_chars = list(punctuation) + [' ', '']
+
+        eng = ["a", "b", "c", "e", "k", "m", "n", "h", "o", "p", "t", "u", "y",
+               "A", "B", "E", "K", "M", "O", "P", "C", "T", "H", "Y"]
+        rus = ["а", "в", "с", "е", "к", "м", "н", "н", "о", "р", "т", "и", "у",
+               "А", "В", "Е", "К", "М", "О", "Р", "С", "Т", "Н", "У"]
+
+        for item in product_keys:
+            try:
+                if isinstance(item, tuple):
+                    product_code = re.search(get_product_code, item[1]).group()
+                else:
+                    product_code = re.search(get_product_code, item).group()
+            except AttributeError:
+                product_code = item.split(' ')[-1]
+
+            product_code = list(product_code)
+
+            for char in product_code:
+                if char in rus:
+                    rus_ind = rus.index(char)
+                    ind = product_code.index(char)
+                    product_code[ind] = eng[rus_ind]
+                if char in stripped_chars:
+                    product_code.remove(char)
+
+            product_code = ''.join(product_code)
+            search_keys.append((item, product_code.upper()))
+
+        return search_keys
 
 def get_shop(filepath):
     sales_report = pd.read_excel(filepath, sheet_name='Портянка').filter(items=['Адрес т.т. '])
