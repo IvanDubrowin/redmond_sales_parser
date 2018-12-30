@@ -38,7 +38,10 @@ class TradeParser:
                 if k_st in data_rl.keys():
                     data_rl[k_st]['Тек. Остаток'] = int(data_st[k_st][cols_st[1]])
                 else:
-                    data_rl.update(dict([(k_st, data_st[k_st])]))
+                    val = dict(zip(data_st[k_st].keys(),
+                                  [int(value) for value in data_st[k_st].values()])
+                                )
+                    data_rl.update({k_st: val})
         except KeyError as e:
             return e
         return data_rl
