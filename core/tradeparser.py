@@ -32,7 +32,7 @@ class TradeParser:
             for k_rl in data_rl.keys():
                 data_rl[k_rl]['Кол-во'] = sum(data_rl[k_rl]['Кол-во'])
                 data_rl[k_rl]['Сумма'] = int(mean(data_rl[k_rl]['Сумма']))
-                data_rl[k_rl].update({'Тек. Остаток': 0})
+                data_rl[k_rl].update({'Тек. Остаток': None})
 
             for k_st in data_st.keys():
                 if k_st in data_rl.keys():
@@ -63,9 +63,15 @@ class TradeParser:
         for key in data_dict_keys_and_code:
             match = [item for item in sales_report_keys_and_code if fuzz.ratio(key[1], item[1]) == 100]
             if match:
-                sales_report.at[match[0][0][0], 'Кол-во'] = str(data_dict[key[0]].get('Кол-во', ''))
-                sales_report.at[match[0][0][0], 'Тек. Остаток'] = str(data_dict[key[0]].get('Тек. Остаток', ''))
-                sales_report.at[match[0][0][0], 'Сумма'] =  str(data_dict[key[0]].get('Сумма', ''))
+                count = data_dict[key[0]].get('Кол-во')
+                if count is not None:
+                    sales_report.at[match[0][0][0], 'Кол-во'] = count
+                stock = data_dict[key[0]].get('Тек. Остаток')
+                if stock is not None:
+                    sales_report.at[match[0][0][0], 'Тек. Остаток'] = stock
+                summ = data_dict[key[0]].get('Сумма')
+                if summ is not None:
+                    sales_report.at[match[0][0][0], 'Сумма'] = summ
                 found_keys.add(key[0])
             else:
                 not_found_keys.add(key[0])
@@ -82,10 +88,10 @@ class TradeParser:
     def write_to_excel(self):
         filename = f'Отчет{datetime.strftime(datetime.now(), "%Y.%m.%d")}.xlsx'
         sales = self.parse_sales_report()
+        data = sales[0]
         writer = pd.ExcelWriter(filename, engine = 'xlsxwriter')
-        sales[0].to_excel(writer, sheet_name = 'Отчет')
+        data.to_excel(writer, sheet_name = 'Отчет')
         writer.save()
-        writer.close()
         return sales[1]
 
     @staticmethod
