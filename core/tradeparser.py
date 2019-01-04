@@ -91,6 +91,13 @@ class TradeParser:
         data = sales[0]
         writer = pd.ExcelWriter(filename, engine = 'xlsxwriter')
         data.to_excel(writer, sheet_name = 'Отчет')
+
+        workbook  = writer.book
+        worksheet = writer.sheets['Отчет']
+
+        f = workbook.add_format({'align': 'center', 'valign': 'vcenter'})
+
+        worksheet.set_column('D:F', None, f)
         writer.save()
         return sales[1]
 
