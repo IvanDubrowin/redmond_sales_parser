@@ -54,7 +54,7 @@ class TradeParser:
         append_col = pd.DataFrame({'Кол-во': [nan], 'Тек. Остаток': [nan], 'Сумма': [nan]})
 
         sales_report = pd.read_excel(self.sales_report, sheet_name='Портянка').filter(items=['Адрес т.т. ', 'Название SKU'])
-        sales_report = sales_report[sales_report['Адрес т.т. '].str.contains(self.shop, regex=False)]
+        sales_report = sales_report[sales_report['Адрес т.т. '].str.contains(self.shop, regex=False, na=False)]
         sales_report.join(append_col)
 
         sales_report_keys_and_code = self.search_code(sales_report['Название SKU'].items())
