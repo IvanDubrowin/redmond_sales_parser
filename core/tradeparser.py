@@ -119,7 +119,7 @@ class TradeParser:
                 else:
                     product_code = re.search(get_product_code, item).group()
             except AttributeError:
-                product_code = item.split(' ')[-1]
+                pass
 
             product_code = list(product_code)
 
@@ -139,5 +139,5 @@ class TradeParser:
 def get_shop(filepath):
     sales_report = pd.read_excel(filepath, sheet_name='Портянка').filter(items=['Адрес т.т. '])
     choices_set = set(sales_report['Адрес т.т. '])
-    choices_set = sorted(list(choices_set))
+    choices_set = sorted([item for item in choices_set if isinstance(item, str)])
     return choices_set
