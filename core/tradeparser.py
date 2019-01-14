@@ -41,7 +41,7 @@ class TradeParser:
                     val = dict(zip(data_st[k_st].keys(),
                                   [int(value) for value in data_st[k_st].values()])
                                 )
-                    data_rl.update({k_st: val})
+                    data_rl.update({k_st: {'Тек. Остаток': val.values()}})
         except KeyError as e:
             return e
         return data_rl
