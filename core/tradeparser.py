@@ -31,17 +31,14 @@ class TradeParser:
 
             for k_rl in data_rl.keys():
                 data_rl[k_rl]['Кол-во'] = sum(data_rl[k_rl]['Кол-во'])
-                data_rl[k_rl]['Сумма'] = int(mean(data_rl[k_rl]['Сумма']))
+                data_rl[k_rl]['Сумма'] = int(sum(data_rl[k_rl]['Сумма'])/data_rl[k_rl]['Кол-во'])
                 data_rl[k_rl].update({'Тек. Остаток': None})
 
             for k_st in data_st.keys():
                 if k_st in data_rl.keys():
                     data_rl[k_st]['Тек. Остаток'] = int(data_st[k_st][cols_st[1]])
                 else:
-                    val = dict(zip(data_st[k_st].keys(),
-                                  [int(value) for value in data_st[k_st].values()])
-                                )
-                    data_rl.update({k_st: {'Тек. Остаток': val.values()}})
+                    data_rl.update({k_st: {'Тек. Остаток': int(data_st[k_st][cols_st[1]])}})
         except KeyError as e:
             return e
         return data_rl
