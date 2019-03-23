@@ -31,7 +31,10 @@ class TradeParser:
 
             for k_rl in data_rl.keys():
                 data_rl[k_rl]['Кол-во'] = sum(data_rl[k_rl]['Кол-во'])
-                data_rl[k_rl]['Сумма'] = int(sum(data_rl[k_rl]['Сумма'])/data_rl[k_rl]['Кол-во'])
+                if sum(data_rl[k_rl]['Сумма']) != 0:
+                    data_rl[k_rl]['Сумма'] = int(sum(data_rl[k_rl]['Сумма'])/data_rl[k_rl]['Кол-во'])
+                else:
+                    data_rl[k_rl]['Сумма'] = 0
                 data_rl[k_rl].update({'Тек. Остаток': None})
 
             for k_st in data_st.keys():
