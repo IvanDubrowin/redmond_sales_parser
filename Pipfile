@@ -1,0 +1,19 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+pandas = "*"
+numpy = "*"
+PyQt5 = "*"
+xlrd = "==1.2.0"
+XlsxWriter = "*"
+
+[dev-packages]
+flake8 = "*"
+mypy = "*"
+isort = "*"
+
+[requires]
+python_version = "3.8"
