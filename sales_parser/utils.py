@@ -36,10 +36,10 @@ def write_to_excel(dataframe: FrameOrSeries) -> None:
     worksheet.set_column('D:F', None, f)
 
     for idx, col in enumerate(dataframe, 1):
-        series = dataframe[col]  # type: FrameOrSeries
+        series: FrameOrSeries = dataframe[col]
         max_len = max([
             series.astype(str).map(len).max(),
-            len(str(series.name))
+            len(series.name)
         ])
         worksheet.set_column(idx, idx, max_len + 1)
     writer.save()
