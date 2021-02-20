@@ -18,25 +18,30 @@ def get_shop(file_path: str) -> List[str]:
 
 
 def validate_report_path(file_path: str) -> bool:
-    is_valid = False
-
     for ext in VALID_EXTENSIONS:
         if file_path.endswith(ext):
-            is_valid = True
+            return True
+    return False
 
-    return is_valid
 
-
-def write_to_excel(data: FrameOrSeries) -> None:
+def write_to_excel(dataframe: FrameOrSeries) -> None:
     filename = f'Отчет{datetime.strftime(datetime.now(), "%Y.%m.%d")}.xlsx'
     writer = pd.ExcelWriter(filename, engine='xlsxwriter')
-    data.to_excel(writer, sheet_name='Отчет')
+    dataframe.to_excel(writer, sheet_name='Отчет')
 
     workbook = writer.book
     worksheet = writer.sheets['Отчет']
 
     f = workbook.add_format({'align': 'center', 'valign': 'vcenter'})
     worksheet.set_column('D:F', None, f)
+
+    for idx, col in enumerate(dataframe, 1):
+        series = dataframe[col]  # type: FrameOrSeries
+        max_len = max([
+            series.astype(str).map(len).max(),
+            len(str(series.name))
+        ])
+        worksheet.set_column(idx, idx, max_len + 1)
     writer.save()
 
 
