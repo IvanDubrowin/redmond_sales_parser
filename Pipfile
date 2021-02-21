@@ -9,6 +9,7 @@ numpy = "*"
 PyQt5 = "*"
 xlrd = "==1.2.0"
 XlsxWriter = "*"
+pyinstaller = "*"
 
 [dev-packages]
 flake8 = "*"

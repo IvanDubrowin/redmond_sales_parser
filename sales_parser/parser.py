@@ -30,7 +30,7 @@ class SalesParser:
         stock: DataFrame = pd.read_excel(self.stock_path)
 
         realization_cols = self._get_realization_cols()
-        stock_cols = self._get_stock_cols(stock)
+        stock_cols = self._get_stock_cols()
 
         realization_data = realization[realization_cols] \
             .groupby(constants.PRODUCT_NAME_IN_STOCK_AND_REAL) \
@@ -97,7 +97,7 @@ class SalesParser:
 
         for product, attrs in stock_and_realization.items():
             for label, row_data in sales_report[constants.PRODUCT_NAME_IN_REPORT].items():
-                if self._compare_product_code(product, row_data):
+                if self._is_equal_product_codes(product, row_data):
                     product_count = attrs.get(constants.PRODUCT_COUNT)
 
                     if product_count is not None:
@@ -117,7 +117,7 @@ class SalesParser:
 
         return sales_report, self._get_report_info(stock_and_realization, found_products)
 
-    def _compare_product_code(self, left: str, right: str) -> bool:
+    def _is_equal_product_codes(self, left: str, right: str) -> bool:
         left_match = self.PRODUCT_CODE_REGEX.search(left)
         right_match = self.PRODUCT_CODE_REGEX.search(right)
 
@@ -148,12 +148,7 @@ class SalesParser:
         ]
 
     @staticmethod
-    def _get_stock_cols(stock: DataFrame) -> List[str]:
-        if constants.BALANCE_PER_DATE in stock:
-            return [
-                constants.PRODUCT_NAME_IN_STOCK_AND_REAL,
-                constants.BALANCE_PER_DATE
-            ]
+    def _get_stock_cols() -> List[str]:
         return [
             constants.PRODUCT_NAME_IN_STOCK_AND_REAL,
             constants.CURRENT_BALANCE

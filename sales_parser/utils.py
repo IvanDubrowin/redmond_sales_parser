@@ -41,7 +41,7 @@ def write_to_excel(dataframe: FrameOrSeries) -> None:
             series.astype(str).map(len).max(),
             len(series.name)
         ])
-        worksheet.set_column(idx, idx, max_len + 1)
+        worksheet.set_column(idx, idx, max_len)
     writer.save()
 
 

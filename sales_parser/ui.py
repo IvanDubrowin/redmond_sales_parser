@@ -1,3 +1,4 @@
+import traceback
 from typing import Optional
 
 from PyQt5 import QtCore, QtWidgets
@@ -10,7 +11,7 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.setFixedSize(640, 440)
-        self.setupUi()
+        self._setupUi()
         self.sales_path.setReadOnly(True)
         self.report_path.setReadOnly(True)
         self.stock_path.setReadOnly(True)
@@ -20,10 +21,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.generate_report_button.setEnabled(False)
         self.choice_shop.setEnabled(False)
         self.progressBar.setFormat('Индикатор выполнения программы')
-        self.centerOnScreen()
+        self._centerOnScreen()
         self.shop: Optional[str] = None
 
-    def setupUi(self) -> None:
+    def _setupUi(self) -> None:
         self.setObjectName("Generator")
         self.resize(641, 461)
         self.centralwidget = QtWidgets.QWidget(self)
@@ -34,33 +35,33 @@ class MainWindow(QtWidgets.QMainWindow):
         self.report_button = QtWidgets.QPushButton(self.centralwidget)
         self.report_button.setGeometry(QtCore.QRect(450, 30, 161, 29))
         self.report_button.setObjectName("report_button")
-        self.report_button.clicked.connect(self.open_report)
+        self.report_button.clicked.connect(self._open_report)
         self.download_report_button = QtWidgets.QPushButton(self.centralwidget)
         self.download_report_button.setGeometry(QtCore.QRect(238, 80, 191, 29))
         self.download_report_button.setObjectName("download_report_button")
-        self.download_report_button.clicked.connect(self.download_report)
+        self.download_report_button.clicked.connect(self._download_report)
         self.choice_shop = QtWidgets.QComboBox(self.centralwidget)
         self.choice_shop.setGeometry(QtCore.QRect(30, 130, 580, 25))
         self.choice_shop.setObjectName("choice_shop")
-        self.choice_shop.currentIndexChanged[str].connect(self.set_shop)
+        self.choice_shop.currentIndexChanged[str].connect(self._set_shop)
         self.sales_path = QtWidgets.QTextEdit(self.centralwidget)
         self.sales_path.setGeometry(QtCore.QRect(30, 190, 401, 31))
         self.sales_path.setObjectName("sales_path")
         self.stock_button = QtWidgets.QPushButton(self.centralwidget)
         self.stock_button.setGeometry(QtCore.QRect(450, 260, 161, 29))
         self.stock_button.setObjectName("stock_button")
-        self.stock_button.clicked.connect(self.open_stock)
+        self.stock_button.clicked.connect(self._open_stock)
         self.stock_path = QtWidgets.QTextEdit(self.centralwidget)
         self.stock_path.setGeometry(QtCore.QRect(30, 260, 401, 31))
         self.stock_path.setObjectName("stock_path")
         self.sales_button = QtWidgets.QPushButton(self.centralwidget)
         self.sales_button.setGeometry(QtCore.QRect(450, 190, 161, 29))
         self.sales_button.setObjectName("sales_button")
-        self.sales_button.clicked.connect(self.open_sales_report)
+        self.sales_button.clicked.connect(self._open_sales_report)
         self.generate_report_button = QtWidgets.QPushButton(self.centralwidget)
         self.generate_report_button.setGeometry(QtCore.QRect(240, 330, 191, 29))
         self.generate_report_button.setObjectName("generate_report_button")
-        self.generate_report_button.clicked.connect(self.write_to_report)
+        self.generate_report_button.clicked.connect(self._write_to_report)
         self.progressBar = QtWidgets.QProgressBar(self.centralwidget)
         self.progressBar.setGeometry(QtCore.QRect(10, 390, 622, 25))
         self.progressBar.setProperty("value", 0)
@@ -70,10 +71,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.statusbar.setObjectName("statusbar")
         self.setStatusBar(self.statusbar)
 
-        self.retranslateUi()
+        self._retranslateUi()
         QtCore.QMetaObject.connectSlotsByName(self)
 
-    def retranslateUi(self) -> None:
+    def _retranslateUi(self) -> None:
         _translate = QtCore.QCoreApplication.translate
         self.setWindowTitle(_translate("Generator", "Генератор отчетов"))
         self.report_button.setText(_translate("Generator", "Отчет для записи"))
@@ -82,28 +83,40 @@ class MainWindow(QtWidgets.QMainWindow):
         self.sales_button.setText(_translate("Generator", "Продажи"))
         self.generate_report_button.setText(_translate("Generator", "Создать отчет"))
 
-    def centerOnScreen(self) -> None:
+    def _centerOnScreen(self) -> None:
         resolution: QtCore.QRect = QtWidgets.QDesktopWidget().screenGeometry()
         self.move(
             (resolution.width() / 2) - (self.frameSize().width() / 2),
             (resolution.height() / 2) - (self.frameSize().height() / 2)
         )
 
-    def open_sales_report(self) -> None:
+    def _open_sales_report(self) -> None:
         filename, _ = QtWidgets.QFileDialog.getOpenFileName(
-            self, 'Вложите отчет с продажами', '', 'Excel (*.xls *.xlsx)'
+            self,
+            'Вложите отчет с продажами',
+            '',
+            'Excel (*.xls *.xlsx)',
+            options=QtWidgets.QFileDialog.DontUseNativeDialog
         )
         self.sales_path.setText(filename)
 
-    def open_stock(self) -> None:
+    def _open_stock(self) -> None:
         filename, _ = QtWidgets.QFileDialog.getOpenFileName(
-            self, 'Вложите отчет с остатками', '', 'Excel (*.xls *.xlsx)'
+            self,
+            'Вложите отчет с остатками',
+            '',
+            'Excel (*.xls *.xlsx)',
+            options=QtWidgets.QFileDialog.DontUseNativeDialog
         )
         self.stock_path.setText(filename)
 
-    def open_report(self) -> None:
+    def _open_report(self) -> None:
         filename, _ = QtWidgets.QFileDialog.getOpenFileName(
-            self, 'Вложите отчет для записи', '', 'Excel (*.xls *.xlsx)'
+            self,
+            'Вложите отчет для записи',
+            '',
+            'Excel (*.xls *.xlsx)',
+            options=QtWidgets.QFileDialog.DontUseNativeDialog
         )
         self.report_path.setText(filename)
         text = self.report_path.toPlainText()
@@ -111,17 +124,12 @@ class MainWindow(QtWidgets.QMainWindow):
         if text:
             self.download_report_button.setEnabled(True)
 
-    def download_report(self) -> None:
+    def _download_report(self) -> None:
         report_path = self.report_path.toPlainText()
         is_valid = validate_report_path(report_path)
 
         if not is_valid:
-            msg = QtWidgets.QMessageBox()
-            msg.setIcon(QtWidgets.QMessageBox.Warning)
-            msg.setInformativeText("Вы загрузили не Excel файл")
-            msg.setWindowTitle("Ошибка")
-            msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
-            msg.exec_()
+            self._set_error_messagebox("Вы загрузили не Excel файл")
             return None
 
         try:
@@ -139,20 +147,15 @@ class MainWindow(QtWidgets.QMainWindow):
             self.progressBar.setValue(0)
             self.progressBar.setFormat('Индикатор выполнения программы')
         except Exception as e:
-            errmsg = QtWidgets.QMessageBox()
-            errmsg.setIcon(QtWidgets.QMessageBox.Warning)
-            errmsg.setInformativeText(str(e))
-            errmsg.setWindowTitle("Ошибка")
-            errmsg.setStandardButtons(QtWidgets.QMessageBox.Ok)
-            errmsg.exec_()
+            self._set_error_messagebox(self._format_error(e))
 
-    def set_shop(self, shop: str) -> None:
+    def _set_shop(self, shop: str) -> None:
         self.shop = shop
         self.sales_button.setEnabled(True)
         self.stock_button.setEnabled(True)
         self.generate_report_button.setEnabled(True)
 
-    def write_to_report(self) -> None:
+    def _write_to_report(self) -> None:
         realization = self.sales_path.toPlainText()
         stock = self.stock_path.toPlainText()
         report = self.report_path.toPlainText()
@@ -160,12 +163,7 @@ class MainWindow(QtWidgets.QMainWindow):
         is_valid_paths = all(validate_report_path(path) for path in [realization, stock, report])
 
         if not is_valid_paths or not self.shop:
-            msg = QtWidgets.QMessageBox()
-            msg.setIcon(QtWidgets.QMessageBox.Warning)
-            msg.setInformativeText("Вы загрузили не все файлы!")
-            msg.setWindowTitle("Ошибка")
-            msg.setStandardButtons(QtWidgets.QMessageBox.Ok)
-            msg.exec_()
+            self._set_error_messagebox("Вы загрузили не все файлы!")
             return None
 
         try:
@@ -193,12 +191,20 @@ class MainWindow(QtWidgets.QMainWindow):
             success.setWindowTitle("Загрузка прошла успешно!")
             success.setStandardButtons(QtWidgets.QMessageBox.Ok)
             success.exec_()
-        except OSError as e:
-            self.progressBar.setValue(0)
-            self.progressBar.setFormat('Индикатор выполнения программы')
-            errmsg = QtWidgets.QMessageBox()
-            errmsg.setIcon(QtWidgets.QMessageBox.Warning)
-            errmsg.setInformativeText(str(e))
-            errmsg.setWindowTitle("Ошибка")
-            errmsg.setStandardButtons(QtWidgets.QMessageBox.Ok)
-            errmsg.exec_()
+        except Exception as e:
+            self._set_error_messagebox(self._format_error(e))
+
+    def _set_error_messagebox(self, err_text: str) -> None:
+        self.progressBar.setValue(0)
+        self.progressBar.setFormat('Индикатор выполнения программы')
+        errmsg = QtWidgets.QMessageBox()
+        errmsg.setIcon(QtWidgets.QMessageBox.Warning)
+        errmsg.setInformativeText(err_text)
+        errmsg.setWindowTitle("Ошибка")
+        errmsg.setStandardButtons(QtWidgets.QMessageBox.Ok)
+        errmsg.exec_()
+
+    @staticmethod
+    def _format_error(err: Exception) -> str:
+        fmt_traceback = '\n'.join(traceback.format_tb(err.__traceback__))
+        return f'{str(err)}\n {fmt_traceback}'
