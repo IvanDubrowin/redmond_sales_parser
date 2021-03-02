@@ -1,3 +1,4 @@
+import time
 import traceback
 from typing import Optional
 
@@ -133,18 +134,14 @@ class MainWindow(QtWidgets.QMainWindow):
             return None
 
         try:
-            percent = 0
             self.progressBar.setFormat('Идет выполнение программы, ждите')
-
-            for i in range(100):
-                percent += 1
-                self.progressBar.setValue(percent)
+            self._set_progress_percent(100)
 
             choices = get_shop(report_path)
 
             self.choice_shop.addItems(choices)
             self.choice_shop.setEnabled(True)
-            self.progressBar.setValue(0)
+            self._set_progress_percent(0)
             self.progressBar.setFormat('Индикатор выполнения программы')
         except Exception as e:
             self._set_error_messagebox(self._format_error(e))
@@ -175,15 +172,15 @@ class MainWindow(QtWidgets.QMainWindow):
             )
             self.progressBar.setFormat('Идет выполнение программы, ждите')
 
-            percent = 0
-            for i in range(100):
-                percent += 1
-                self.progressBar.setValue(percent)
+            self._set_progress_percent(50)
 
             data, info = parser.parse()
+
+            self._set_progress_percent(100, use_current_value=True)
+
             write_to_excel(data)
 
-            self.progressBar.setValue(0)
+            self._set_progress_percent(0)
             self.progressBar.setFormat('Индикатор выполнения программы')
             success = QtWidgets.QMessageBox()
             success.setIcon(QtWidgets.QMessageBox.Information)
@@ -195,7 +192,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self._set_error_messagebox(self._format_error(e))
 
     def _set_error_messagebox(self, err_text: str) -> None:
-        self.progressBar.setValue(0)
+        self._set_progress_percent(0)
         self.progressBar.setFormat('Индикатор выполнения программы')
         errmsg = QtWidgets.QMessageBox()
         errmsg.setIcon(QtWidgets.QMessageBox.Warning)
@@ -203,6 +200,18 @@ class MainWindow(QtWidgets.QMainWindow):
         errmsg.setWindowTitle("Ошибка")
         errmsg.setStandardButtons(QtWidgets.QMessageBox.Ok)
         errmsg.exec_()
+
+    def _set_progress_percent(self, percent: int, use_current_value: bool = False) -> None:
+        value = self.progressBar.value() if use_current_value else 0
+
+        if percent < 1:
+            self.progressBar.setValue(value)
+            return None
+
+        for i in range(percent):
+            value += 1
+            time.sleep(0.1)
+            self.progressBar.setValue(value)
 
     @staticmethod
     def _format_error(err: Exception) -> str:
