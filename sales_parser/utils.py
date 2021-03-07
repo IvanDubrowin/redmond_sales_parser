@@ -3,7 +3,8 @@ from string import punctuation
 from typing import List
 
 import pandas as pd
-from pandas.core.generic import FrameOrSeries
+from pandas.core.frame import DataFrame
+from pandas.core.series import Series
 
 from sales_parser import constants
 
@@ -11,7 +12,7 @@ VALID_EXTENSIONS = ['.xls', '.xlsx']
 
 
 def get_shop(file_path: str) -> List[str]:
-    dataframe: FrameOrSeries = pd.read_excel(file_path, sheet_name=constants.TARGET_SHEET_NAME)
+    dataframe: DataFrame = pd.read_excel(file_path, sheet_name=constants.TARGET_SHEET_NAME)
     choices_set = set(dataframe.filter(items=[constants.SHOP_ADDRESS_COL])[constants.SHOP_ADDRESS_COL])
     choices_list = sorted([item for item in choices_set if isinstance(item, str)])
     return choices_list
@@ -24,7 +25,7 @@ def validate_report_path(file_path: str) -> bool:
     return False
 
 
-def write_to_excel(dataframe: FrameOrSeries) -> None:
+def write_to_excel(dataframe: DataFrame) -> None:
     filename = f'Отчет{datetime.strftime(datetime.now(), "%Y.%m.%d")}.xlsx'
     writer = pd.ExcelWriter(filename, engine='xlsxwriter')
     dataframe.to_excel(writer, sheet_name='Отчет')
@@ -36,10 +37,10 @@ def write_to_excel(dataframe: FrameOrSeries) -> None:
     worksheet.set_column('D:F', None, f)
 
     for idx, col in enumerate(dataframe, 1):
-        series: FrameOrSeries = dataframe[col]
+        series: Series = dataframe[col]
         max_len = max([
             series.astype(str).map(len).max(),
-            len(series.name)
+            len(series.name or '')
         ])
         worksheet.set_column(idx, idx, max_len)
     writer.save()
