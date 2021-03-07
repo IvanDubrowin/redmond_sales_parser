@@ -1,10 +1,10 @@
 import re
-from typing import Set, Tuple, List
+from typing import List, Set, Tuple
 
 import pandas as pd
-from numpy import nan, isnan
-from pandas.core.series import Series
+from numpy import isnan, nan
 from pandas.core.frame import DataFrame
+from pandas.core.series import Series
 
 from sales_parser import constants
 from sales_parser.utils import normalize_product_code
@@ -37,7 +37,7 @@ class SalesParser:
                 [
                     constants.PRODUCT_NAME_IN_REAL,
                     constants.CURRENT_BALANCE,
-                    constants.PRODUCT_PRICE_IN_STOCK
+                    constants.PRODUCT_PRICE
                 ],
                 axis='columns'
             )
@@ -45,8 +45,8 @@ class SalesParser:
         frame[constants.CURRENT_BALANCE] = pd.to_numeric(
             frame[constants.CURRENT_BALANCE], downcast='unsigned'
         )
-        frame[constants.PRODUCT_PRICE_IN_STOCK] = pd.to_numeric(
-            frame[constants.PRODUCT_PRICE_IN_STOCK], downcast='unsigned'
+        frame[constants.PRODUCT_PRICE] = pd.to_numeric(
+            frame[constants.PRODUCT_PRICE], downcast='unsigned'
         )
         return frame
 
@@ -89,19 +89,18 @@ class SalesParser:
                 na=False
             )
         ]
-        sales_report.join(
+        return sales_report.join(
             pd.DataFrame({
                 constants.PRODUCT_COUNT: [nan],
                 constants.CURRENT_BALANCE: [nan],
                 constants.PRODUCT_SUM: [nan]
             })
         )
-        return sales_report
 
     def _update_sales_report(self) -> Tuple[DataFrame, str]:
         stock_and_realization = self._get_stock_and_realization()
         sales_report = self._get_sales_report()
-        found_products = set()
+        found_products: Set[str] = set()
 
         for _, product_attrs in stock_and_realization.iterrows():
             sales_report = sales_report.apply(
@@ -130,6 +129,10 @@ class SalesParser:
 
             if not isnan(product_attrs[constants.PRODUCT_SUM]):
                 sales_report_row[constants.PRODUCT_SUM] = int(product_attrs[constants.PRODUCT_SUM])
+
+            if isnan(product_attrs[constants.PRODUCT_SUM]) \
+                    and not isnan(product_attrs[constants.PRODUCT_PRICE]):
+                sales_report_row[constants.PRODUCT_SUM] = int(product_attrs[constants.PRODUCT_PRICE])
 
             found_products.add(
                 product_attrs[constants.PRODUCT_NAME_IN_REAL]
@@ -164,7 +167,7 @@ class SalesParser:
         return [
             constants.PRODUCT_NAME_IN_REAL,
             constants.PRODUCT_COUNT,
-            constants.PRODUCT_PRICE_IN_REAL
+            constants.PRODUCT_SUM
         ]
 
     @staticmethod
@@ -172,14 +175,14 @@ class SalesParser:
         return [
             constants.PRODUCT_NAME_IN_STOCK,
             constants.PRODUCT_COUNT,
-            constants.PRODUCT_PRICE_IN_STOCK
+            constants.PRODUCT_PRICE
         ]
 
     @staticmethod
     def _calc_avg_product_price(series: Series) -> Series:
-        if series[constants.PRODUCT_PRICE_IN_REAL] > 0:
-            series[constants.PRODUCT_PRICE_IN_REAL] = int(
-                series[constants.PRODUCT_PRICE_IN_REAL] / series[constants.PRODUCT_COUNT]
+        if series[constants.PRODUCT_SUM] > 0:
+            series[constants.PRODUCT_SUM] = int(
+                series[constants.PRODUCT_SUM] / series[constants.PRODUCT_COUNT]
             )
         return series
 
