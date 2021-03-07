@@ -1,8 +1,8 @@
 import re
-from typing import Set, Tuple, List, Union
+from typing import Set, Tuple, List
 
 import pandas as pd
-from numpy import nan
+from numpy import nan, isnan
 from pandas.core.series import Series
 from pandas.core.frame import DataFrame
 
@@ -105,47 +105,36 @@ class SalesParser:
 
         for _, product_attrs in stock_and_realization.iterrows():
             sales_report = sales_report.apply(
-                func=self.__update_sales_report_row,
+                func=self._update_sales_report_row,
                 axis='columns',
                 args=(product_attrs, found_products)
             )
 
-        raise AssertionError
-
-        # for product, attrs in stock_and_realization.items():
-        #     for label, row_data in sales_report[constants.PRODUCT_NAME_IN_REPORT].items():
-        #         if self._is_equal_product_codes(product, row_data):
-        #             product_count = attrs.get(constants.PRODUCT_COUNT)
-        #
-        #             if product_count is not None:
-        #                 sales_report.at[label, constants.PRODUCT_COUNT] = product_count
-        #
-        #             product_stock = attrs.get(constants.CURRENT_BALANCE)
-        #
-        #             if product_stock is not None:
-        #                 sales_report.at[label, constants.CURRENT_BALANCE] = product_stock
-        #
-        #             product_sum = attrs.get(constants.PRODUCT_SUM)
-        #
-        #             if product_sum is not None:
-        #                 sales_report.at[label, constants.PRODUCT_SUM] = product_sum
-        #
-        #             found_products.add(product)
-
         return sales_report, self._get_report_info(stock_and_realization, found_products)
 
-    def __update_sales_report_row(
+    def _update_sales_report_row(
             self,
-            row: Series,
+            sales_report_row: Series,
             product_attrs: Series,
             found_products: set
     ) -> Series:
         if self._is_equal_product_codes(
-                row[constants.PRODUCT_NAME_IN_REPORT],
+                sales_report_row[constants.PRODUCT_NAME_IN_REPORT],
                 product_attrs[constants.PRODUCT_NAME_IN_REAL]
         ):
-            print('Equal')
-        return row
+            if not isnan(product_attrs[constants.PRODUCT_COUNT]):
+                sales_report_row[constants.PRODUCT_COUNT] = int(product_attrs[constants.PRODUCT_COUNT])
+
+            if not isnan(product_attrs[constants.CURRENT_BALANCE]):
+                sales_report_row[constants.CURRENT_BALANCE] = int(product_attrs[constants.CURRENT_BALANCE])
+
+            if not isnan(product_attrs[constants.PRODUCT_SUM]):
+                sales_report_row[constants.PRODUCT_SUM] = int(product_attrs[constants.PRODUCT_SUM])
+
+            found_products.add(
+                product_attrs[constants.PRODUCT_NAME_IN_REAL]
+            )
+        return sales_report_row
 
     def _is_equal_product_codes(self, left: str, right: str) -> bool:
         left_match = self.PRODUCT_CODE_REGEX.search(left)
@@ -157,9 +146,10 @@ class SalesParser:
         return normalize_product_code(left_match.group()) == normalize_product_code(right_match.group())
 
     @staticmethod
-    def _get_report_info(stock_and_real: dict, found: Set[str]) -> str:
-        count_all_products = len(stock_and_real)
-        not_found = set(stock_and_real) - found
+    def _get_report_info(stock_and_real: DataFrame, found: Set[str]) -> str:
+        all_products = set(stock_and_real[constants.PRODUCT_NAME_IN_REAL].unique())
+        count_all_products = len(all_products)
+        not_found = set(all_products) - found
         report_info = f'Найдено {len(found)} товаров из {count_all_products}'
 
         if not_found:
