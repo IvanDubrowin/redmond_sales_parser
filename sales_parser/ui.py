@@ -120,9 +120,8 @@ class MainWindow(QtWidgets.QMainWindow):
             options=QtWidgets.QFileDialog.DontUseNativeDialog
         )
         self.report_path.setText(filename)
-        text = self.report_path.toPlainText()
 
-        if text:
+        if self.report_path.toPlainText():
             self.download_report_button.setEnabled(True)
 
     def _download_report(self) -> None:
@@ -174,7 +173,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self._set_progress_percent(50)
 
-            data, info = parser.parse()
+            data, info = parser.get_report()
 
             self._set_progress_percent(100, use_current_value=True)
 
@@ -210,7 +209,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
         for i in range(percent):
             value += 1
-            time.sleep(0.1)
+
+            if value % 10 == 0:
+                time.sleep(0.1)
+
             self.progressBar.setValue(value)
 
     @staticmethod

@@ -1,10 +1,10 @@
 import re
-from typing import List, Set, Tuple
+from typing import Set, Tuple, List, Union
 
 import pandas as pd
 from numpy import nan
+from pandas.core.series import Series
 from pandas.core.frame import DataFrame
-from pandas.core.generic import FrameOrSeries
 
 from sales_parser import constants
 from sales_parser.utils import normalize_product_code
@@ -25,61 +25,63 @@ class SalesParser:
 
     PRODUCT_CODE_REGEX = re.compile(r'(R[A-ZА-Я]{1,4}[- ][А-ЯA-Z0-9/-]{1,8})\w+|(MSC[- ][А-ЯA-Z0-9/-]{1,8})\w+')
 
-    def _parse_stock_and_realization(self) -> dict:
-        realization: DataFrame = pd.read_excel(self.realization_path)
+    def _parse_stock(self) -> DataFrame:
         stock: DataFrame = pd.read_excel(self.stock_path)
-
-        realization_cols = self._get_realization_cols()
         stock_cols = self._get_stock_cols()
 
-        realization_data = realization[realization_cols] \
-            .groupby(constants.PRODUCT_NAME_IN_STOCK_AND_REAL) \
-            .apply(lambda x: x.set_index(constants.PRODUCT_NAME_IN_STOCK_AND_REAL).to_dict('list')) \
-            .to_dict()
-
-        stock_data = stock[stock_cols] \
-            .groupby(constants.PRODUCT_NAME_IN_STOCK_AND_REAL) \
+        frame = stock[stock_cols] \
+            .groupby(constants.PRODUCT_NAME_IN_STOCK) \
             .mean() \
-            .to_dict('int')
+            .reset_index() \
+            .set_axis(
+                [
+                    constants.PRODUCT_NAME_IN_REAL,
+                    constants.CURRENT_BALANCE,
+                    constants.PRODUCT_PRICE_IN_STOCK
+                ],
+                axis='columns'
+            )
 
-        for key in realization_data:
-            realization_data[key][constants.PRODUCT_COUNT] = sum(realization_data[key][constants.PRODUCT_COUNT])
+        frame[constants.CURRENT_BALANCE] = pd.to_numeric(
+            frame[constants.CURRENT_BALANCE], downcast='unsigned'
+        )
+        frame[constants.PRODUCT_PRICE_IN_STOCK] = pd.to_numeric(
+            frame[constants.PRODUCT_PRICE_IN_STOCK], downcast='unsigned'
+        )
+        return frame
 
-            if sum(realization_data[key][constants.PRODUCT_SUM]) != 0:
-                realization_data[key][constants.PRODUCT_SUM] = int(
-                    sum(
-                        realization_data[key][constants.PRODUCT_SUM]
-                    ) / realization_data[key][constants.PRODUCT_COUNT]
-                )
-            else:
-                realization_data[key][constants.PRODUCT_SUM] = 0
+    def _parse_realization(self) -> DataFrame:
+        realization: DataFrame = pd.read_excel(self.realization_path)
+        realization_cols = self._get_realization_cols()
 
-            realization_data[key].update({constants.CURRENT_BALANCE: None})
+        return realization[realization_cols] \
+            .groupby(constants.PRODUCT_NAME_IN_REAL) \
+            .sum() \
+            .apply(self._calc_avg_product_price, axis='columns') \
+            .reset_index()
 
-        for key in stock_data:
-            balance = int(stock_data[key][stock_cols[1]])
+    def _get_stock_and_realization(self) -> DataFrame:
+        realization = self._parse_realization()
+        stock = self._parse_stock()
 
-            if key in realization_data:
-                realization_data[key][constants.CURRENT_BALANCE] = balance
-            else:
-                realization_data.update({key: {constants.CURRENT_BALANCE: balance}})
+        return pd.merge(
+            stock,
+            realization,
+            on=constants.PRODUCT_NAME_IN_REAL,
+            how='outer'
+        )
 
-        return realization_data
-
-    def _parse_sales_report(self) -> Tuple[FrameOrSeries, str]:
-        stock_and_realization = self._parse_stock_and_realization()
-        found_products = set()
-
+    def _get_sales_report(self) -> DataFrame:
         sales_report: DataFrame = pd.read_excel(
             self.report_path,
             sheet_name=constants.TARGET_SHEET_NAME
         ) \
             .filter(
-                items=[
-                    constants.SHOP_ADDRESS_COL,
-                    constants.PRODUCT_NAME_IN_REPORT
-                ]
-            )
+            items=[
+                constants.SHOP_ADDRESS_COL,
+                constants.PRODUCT_NAME_IN_REPORT
+            ]
+        )
         sales_report = sales_report[
             sales_report[constants.SHOP_ADDRESS_COL].str.contains(
                 self.shop,
@@ -94,28 +96,56 @@ class SalesParser:
                 constants.PRODUCT_SUM: [nan]
             })
         )
+        return sales_report
 
-        for product, attrs in stock_and_realization.items():
-            for label, row_data in sales_report[constants.PRODUCT_NAME_IN_REPORT].items():
-                if self._is_equal_product_codes(product, row_data):
-                    product_count = attrs.get(constants.PRODUCT_COUNT)
+    def _update_sales_report(self) -> Tuple[DataFrame, str]:
+        stock_and_realization = self._get_stock_and_realization()
+        sales_report = self._get_sales_report()
+        found_products = set()
 
-                    if product_count is not None:
-                        sales_report.at[label, constants.PRODUCT_COUNT] = product_count
+        for _, product_attrs in stock_and_realization.iterrows():
+            sales_report = sales_report.apply(
+                func=self.__update_sales_report_row,
+                axis='columns',
+                args=(product_attrs, found_products)
+            )
 
-                    product_stock = attrs.get(constants.CURRENT_BALANCE)
+        raise AssertionError
 
-                    if product_stock is not None:
-                        sales_report.at[label, constants.CURRENT_BALANCE] = product_stock
-
-                    product_sum = attrs.get(constants.PRODUCT_SUM)
-
-                    if product_sum is not None:
-                        sales_report.at[label, constants.PRODUCT_SUM] = product_sum
-
-                    found_products.add(product)
+        # for product, attrs in stock_and_realization.items():
+        #     for label, row_data in sales_report[constants.PRODUCT_NAME_IN_REPORT].items():
+        #         if self._is_equal_product_codes(product, row_data):
+        #             product_count = attrs.get(constants.PRODUCT_COUNT)
+        #
+        #             if product_count is not None:
+        #                 sales_report.at[label, constants.PRODUCT_COUNT] = product_count
+        #
+        #             product_stock = attrs.get(constants.CURRENT_BALANCE)
+        #
+        #             if product_stock is not None:
+        #                 sales_report.at[label, constants.CURRENT_BALANCE] = product_stock
+        #
+        #             product_sum = attrs.get(constants.PRODUCT_SUM)
+        #
+        #             if product_sum is not None:
+        #                 sales_report.at[label, constants.PRODUCT_SUM] = product_sum
+        #
+        #             found_products.add(product)
 
         return sales_report, self._get_report_info(stock_and_realization, found_products)
+
+    def __update_sales_report_row(
+            self,
+            row: Series,
+            product_attrs: Series,
+            found_products: set
+    ) -> Series:
+        if self._is_equal_product_codes(
+                row[constants.PRODUCT_NAME_IN_REPORT],
+                product_attrs[constants.PRODUCT_NAME_IN_REAL]
+        ):
+            print('Equal')
+        return row
 
     def _is_equal_product_codes(self, left: str, right: str) -> bool:
         left_match = self.PRODUCT_CODE_REGEX.search(left)
@@ -142,17 +172,26 @@ class SalesParser:
     @staticmethod
     def _get_realization_cols() -> List[str]:
         return [
-            constants.PRODUCT_NAME_IN_STOCK_AND_REAL,
+            constants.PRODUCT_NAME_IN_REAL,
             constants.PRODUCT_COUNT,
-            constants.PRODUCT_SUM
+            constants.PRODUCT_PRICE_IN_REAL
         ]
 
     @staticmethod
     def _get_stock_cols() -> List[str]:
         return [
-            constants.PRODUCT_NAME_IN_STOCK_AND_REAL,
-            constants.CURRENT_BALANCE
+            constants.PRODUCT_NAME_IN_STOCK,
+            constants.PRODUCT_COUNT,
+            constants.PRODUCT_PRICE_IN_STOCK
         ]
 
-    def parse(self) -> Tuple[FrameOrSeries, str]:
-        return self._parse_sales_report()
+    @staticmethod
+    def _calc_avg_product_price(series: Series) -> Series:
+        if series[constants.PRODUCT_PRICE_IN_REAL] > 0:
+            series[constants.PRODUCT_PRICE_IN_REAL] = int(
+                series[constants.PRODUCT_PRICE_IN_REAL] / series[constants.PRODUCT_COUNT]
+            )
+        return series
+
+    def get_report(self) -> Tuple[DataFrame, str]:
+        return self._update_sales_report()
