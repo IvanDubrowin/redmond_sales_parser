@@ -29,7 +29,7 @@ class SalesParser:
         stock: DataFrame = pd.read_excel(self.stock_path)
         stock_cols = self._get_stock_cols()
 
-        frame = stock[stock_cols] \
+        return stock[stock_cols] \
             .groupby(constants.PRODUCT_NAME_IN_STOCK) \
             .mean() \
             .reset_index() \
@@ -41,14 +41,6 @@ class SalesParser:
                 ],
                 axis='columns'
             )
-
-        frame[constants.CURRENT_BALANCE] = pd.to_numeric(
-            frame[constants.CURRENT_BALANCE], downcast='unsigned'
-        )
-        frame[constants.PRODUCT_PRICE] = pd.to_numeric(
-            frame[constants.PRODUCT_PRICE], downcast='unsigned'
-        )
-        return frame
 
     def _parse_realization(self) -> DataFrame:
         realization: DataFrame = pd.read_excel(self.realization_path)
@@ -115,7 +107,7 @@ class SalesParser:
             self,
             sales_report_row: Series,
             product_attrs: Series,
-            found_products: set
+            found_products: Set[str]
     ) -> Series:
         if self._is_equal_product_codes(
                 sales_report_row[constants.PRODUCT_NAME_IN_REPORT],
