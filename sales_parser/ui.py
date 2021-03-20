@@ -96,8 +96,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self,
             'Вложите отчет с продажами',
             '',
-            'Excel (*.xls *.xlsx)',
-            options=QtWidgets.QFileDialog.DontUseNativeDialog
+            'Excel (*.xls *.xlsx)'
         )
         self.sales_path.setText(filename)
 
@@ -106,8 +105,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self,
             'Вложите отчет с остатками',
             '',
-            'Excel (*.xls *.xlsx)',
-            options=QtWidgets.QFileDialog.DontUseNativeDialog
+            'Excel (*.xls *.xlsx)'
         )
         self.stock_path.setText(filename)
 
@@ -116,8 +114,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self,
             'Вложите отчет для записи',
             '',
-            'Excel (*.xls *.xlsx)',
-            options=QtWidgets.QFileDialog.DontUseNativeDialog
+            'Excel (*.xls *.xlsx)'
         )
         self.report_path.setText(filename)
 

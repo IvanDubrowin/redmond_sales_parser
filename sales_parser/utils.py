@@ -48,22 +48,41 @@ def write_to_excel(dataframe: DataFrame) -> None:
 
 def normalize_product_code(code: str) -> str:
     stripped_chars = list(punctuation) + [' ', '']
-    eng = [
-        "a", "b", "c", "e", "k", "m", "n", "h", "o", "p", "t", "u", "y",
-        "A", "B", "E", "K", "M", "O", "P", "C", "T", "H", "Y"
-    ]
-    rus = [
-        "а", "в", "с", "е", "к", "м", "н", "н", "о", "р", "т", "и", "у",
-        "А", "В", "Е", "К", "М", "О", "Р", "С", "Т", "Н", "У"
-    ]
+    rus_to_eng = {
+        "а": "a",
+        "в": "b",
+        "с": "c",
+        "е": "e",
+        "к": "k",
+        "м": "m",
+        "н": "h",
+        "о": "o",
+        "р": "p",
+        "т": "t",
+        "и": "u",
+        "у": "y",
+        "А": "A",
+        "В": "B",
+        "Е": "E",
+        "К": "K",
+        "М": "M",
+        "О": "O",
+        "Р": "P",
+        "С": "C",
+        "Т": "T",
+        "Н": "H",
+        "У": "Y"
+    }
+
     code_chars = list(code)
 
     for char in code_chars:
-        if char in rus:
-            rus_idx = rus.index(char)
-            idx = code_chars.index(char)
-            code_chars[idx] = eng[rus_idx]
         if char in stripped_chars:
             code_chars.remove(char)
+
+    for idx, char in enumerate(code_chars):
+        char_to_replace = rus_to_eng.get(char)
+        if char_to_replace is not None:
+            code_chars[idx] = char_to_replace
 
     return ''.join(code_chars).upper()
